@@ -7,86 +7,15 @@ player_playlists="$player_home/Playlists"
 home_music="/home/whooie/Music"
 home_playlists="/home/whooie/.config/mpd/playlists"
 
-core=("Core.m3u" "Shortlist.m3u" "Shortlist Part I.m3u" "Shortlist Part II.m3u" "Instrumentals.m3u")
-
 # blacklists:
 artists=(
-    "38 Special"
-    "Aaron Copland"
-    "AC-DC"
-    "Aerosmith"
-    "Alex S"
-    "Arai Akino"
-    "Asami Imai"
-    "Beatles, The"
-    "BlackGryph0n"
-    "Bob Seger"
-    "Bryan Adams"
-    "Curtis Schweitzer"
-    "Daniel Ingram"
-    "David Rolfe"
-    "Eagles, The"
-    "ENA"
-    "Eric Johnson"
-    "Foghat"
-    "Fukuhara Miho"
-    "Galileo Galilei"
-    "Game Freak & Shota Kageyama"
-    "Green Day"
-    "Hayami Saori & Touyama Nao"
-    "Huey Lewis & The News"
-    "Iwasaki Taisei"
-    "John Williams"
-    "Kana-Boon"
-    "Konomi Suzuki"
-    "Nana Kitade"
-    "Niel Zaza"
-    "Nintendo"
-    "Phil Collins"
-    "PJ Lequerica"
-    "Protomen, The"
-    "Queen"
-    "REO Speedwagon"
-    "Rob Thomas"
-    "Russell Velazquez"
-    "Sangatsu no Phantasia"
-    "Scenarioart"
-    "Shigatsu wa Kimi no Uso"
-    "Smashing Pumpkins"
-    "Streetlight Manifesto"
-    "Styx"
-    "Survivor"
-    "Tara Strong"
-    "Tomatsu Haruka"
-    "Zoe Keating"
-    "ZZ Top"
+    # blacklisted artist directories
 )
 albums=(
-    "1984"
-    "50 Most Essential Pieces of Classical Music, The"
-    "Ame no Umi"
-    "Aqua Terrarium"
-    "Axis Bold As Love"
-    "Big Dark Love"
-    "Dear Answer"
-    "FLCL Progressive-Alternative Complete Box Set - Disk 2"
-    "FLCL Progressive-Alternative Complete Box Set - Disk 3"
-    "Gamecube Controller Whitenoise"
-    "Gekkan Shoujo Nozaki-kun Vol.3 Special CD Complete Soundtrack"
-    "Its Easier To Be Somebody Else"
-    "Poutine Split"
-    "Sound Checks"
-    "Trinity"
-    "Ultimate Collection, The"
-    "Walk On"
-    "We Need Medicine"
+    # blacklisted album directories
 )
 exclude_patterns=(
-    "*- Arienai*"
-    "*.jpg"
-    "*.png"
-    "*.pdf"
-    "*- Radio*"
+    # blacklisted patterns to catch the rest
 )
 
 declare -A blacklist
@@ -128,6 +57,7 @@ print-help() {
     echo -e "  -h,--help    : Print this info"
 }
 
+# recursive dfs through subdirectories and copy
 dfscp(){ # 1:sourcedir 2:targetdir 3:offset
     if [[ -e "$2" ]]; then
         echo -e "\e[90m$3${2##*/}/\e[0m"
@@ -180,67 +110,7 @@ case $1 in
                 m)
                     echo "Copying from $home_music to $player_music..."
                     dfscp "$home_music" "$player_music" ""
-                    #SAVEIFS=$IFS
-                    #IFS=$(echo -en "\n\b")
-                    #for artist in $home_music/*
-                    #do
-                    #    artist_name=$(echo $artist | awk 'BEGIN{FS="/"}{print $5}')
-                    #    if [[ ! -e "$player_music/$artist_name" ]]
-                    #    then
-                    #        echo "$player_music/$artist_name"
-                    #        sudo rsync -rP "${artists_exclude[@]}" "${albums_exclude[@]}" "${files_exclude[@]}" "$artist" "$player_music"
-                    #    else
-                    #        echo -e "\e[90m$player_music/$artist_name found\e[0m"
-                    #        for album in $artist/*
-                    #        do
-                    #            album_name=$(echo $album | awk 'BEGIN{FS="/"}{print $6}')
-                    #            if [[ ! -e "$player_music/$artist_name/$album_name" ]]
-                    #            then
-                    #                echo "$player_music/$artist_name/$album_name"
-                    #                sudo rsync -rP "${albums_exclude[@]}" "${files_exclude[@]}" "$album" "$player_music/$artist_name"
-                    #            else
-                    #                echo -e "\e[90m$player_music/$artist_name/$album_name found\e[0m"
-                    #                for file in $album/*
-                    #                do
-                    #                    file_name=$(echo $file | awk 'BEGIN{FS="/"}{print $7}')
-                    #                    if [[ ! -e "$player_music/$artist_name/$album_name/$file_name" ]] || [[ "$file" -nt "$player_music/$artist_name/$album_name/$file_name" ]]
-                    #                    then
-                    #                        echo "$player_music/$artist_name/$album_name/$file_name"
-                    #                        sudo rsync -rP "${files_exclude[@]}" "$file" "$player_music/$artist_name/$album_name"
-                    #                    else
-                    #                        echo -e "\e[90m$player_music/$artist_name/$album_name/$file_name omitted\e[0m"
-                    #                    fi
-                    #                done
-                    #            fi
-                    #        done
-                    #    fi
-                    #done
-                    #IFS=$SAVEIFS
                     sudo echo "Music last synced: $(date)" > "$player_music/last_sync"
-                    ;;
-                C)
-                    if [[ ! -e "$player_home/.PLAYER" ]]; then
-                        echo "This option should only be used to copy music to the player's local memory."
-                        exit 1
-                    fi
-                    for i in ${!core[@]}; do
-                        echo "Copying playlist ${core[i]}..."
-                        sudo cat "$home_playlists/${core[i]}" | awk 'BEGIN{FS="/"}{print "/Music/"$3}' > "$player_playlists/${core[i]}"
-                        if [[ ${core[i]} == "Core.m3u" ]]; then
-                            echo "Copying the Core..."
-                            cat "$home_playlists/${core[i]}" | while read file; do
-                                filename=$(echo $file | awk 'BEGIN{FS="/"}{print $3}')
-                                if [[ ! -e "$player_music/$filename" ]] || [[ "$file" -nt "$player_music/$filename" ]]; then
-                                    echo "$player_music/$filename"
-                                    sudo rsync -rP "$home_music/$file" "$player_music"
-                                else
-                                    echo -e "\e[90m$player_music/$filename omitted\e[0m"
-                                fi
-                            done
-                            sudo echo "Music last synced: $(date)" > "$player_music/last_sync"
-                        fi
-                    done
-                    sudo echo "Playlists last synced: $(date)" > "$player_playlists/last_sync"
                     ;;
                 c)
                     size=$(cat "$home_playlists/Core.m3u" | while read file; do
